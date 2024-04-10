@@ -1,0 +1,21 @@
+[Params]
+	WndTitle   = VietVu Setup
+	WndMess    = Initializing Setup...
+	TmpDirSize = 500
+	TmpDirName = VIETVU
+	CmdLine    = _mstest vietvu.mst /C "/S %s %s"
+	DrvModName = DSHELL
+
+[Files]
+	vietvu.mst = vietvu.mst
+	vietvu.inf = vietvu.inf
+	setupapi.inc = setupapi.inc
+	mscomstf.dll = mscomstf.dll
+	msdetstf.dll = msdetstf.dll
+	msinsstf.dll = msinsstf.dll
+	msuilstf.dll = msuilstf.dll
+	msshlstf.dll = msshlstf.dll
+	mscuistf.dll = mscuistf.dll
+	ver.dll = ver.dll
+	_mstest.exe = _mstest.exe
+

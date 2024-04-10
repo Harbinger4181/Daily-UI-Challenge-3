@@ -1,0 +1,336 @@
+'**************************************************************************
+'*
+'* VIETVU.MST - VietVu Setup Script
+'*
+'**************************************************************************
+	
+	'' Global variables
+
+	GLOBAL TitleShortName$
+	GLOBAL TitleLongName$
+	GLOBAL ProductFileName$
+	GLOBAL PromptForPath%
+	GLOBAL DefaultPath$
+	GLOBAL ProgManGroup$
+	GLOBAL ProgManItem$
+	GLOBAL szProductInf$
+
+	'' ****************************************************************
+	'' ** Setup Variables
+	'' ****************************************************************
+
+	TitleShortName$ = "VIETVU"
+	TitleLongName$ = "VietVu for Windows 3.0"
+	szProductInf$ = "vietvu.inf"
+	ProductFileName$ = "VIETVU"
+	PromptForPath% = 1
+	DefaultPath$ = "C:\VIETVU"
+	ProgManGroup$ = "VIETVU 3.0"
+	ProgManItem$ = "VietVu for Windows 3.0"
+	
+	'***********************************************************************
+	'** Mainline
+	'***********************************************************************
+
+	GLOBAL CUIDLL$
+
+	'' Include files
+	'$INCLUDE 'setupapi.inc'
+	
+	'' Custom UI dll
+	CUIDLL$ = "mscuistf.dll"
+	
+	'' Dialog ID's
+	CONST DESTPATH      = 1000
+	CONST APPHELP       = 2000
+	CONST TOOBIG        = 3000
+	CONST BADPATH       = 4000
+	CONST SUCCESS       = 5000
+	
+	'' Bitmap ID
+	CONST LOGO = 1
+	
+	'' Functions and subroutines
+	DECLARE FUNCTION AddFont LIB "mscuistf.dll" (szFont$, szName$) AS INTEGER
+	DECLARE FUNCTION MakePath (szDir$, szFile$) AS STRING
+	DECLARE FUNCTION GetTitleDir (szDefault$) AS STRING
+	DECLARE FUNCTION CopyFiles(szTitleDir$) AS INTEGER
+	DECLARE SUB RegisterFont(fontfile$, fontname$)
+	DECLARE SUB ModifyVietVuIni
+	DECLARE SUB RegisterCustomFonts
+	DECLARE SUB ModifyProgramManager(szTitleDir$)
+	DECLARE SUB ShowSuccess
+	DECLARE SUB RegisterDrivers
+	
+	'' The following statement turns size checking off. Set it to scmOnFatal 
+	'' to enable size checking, where Setup will compare the disk file size 
+	'' with the INF file size and report an error if they are not the same.
+	
+	i% = SetSizeCheckMode(scmOff)
+	
+	SetTitle "VietVu 3.0 Setup"
+	SetBitmap CUIDLL$, LOGO 
+	
+	'' Read in the INF file.
+	
+	ReadInfFile GetSymbolValue("STF_CWDDIR") + szProductInf$
+	
+	'' Decide where to put title files
+	IF PromptForPath% = 1 THEN
+		szTitleDir$ = GetTitleDir(DefaultPath$)
+		IF szTitleDir$ = "" THEN
+			GOTO QUIT
+		ENDIF
+	ELSE
+		szTitleDir$ = GetWindowsDir()
+	ENDIF   
+	
+	'' Copy files
+	IF CopyFiles(szTitleDir$) = 0 THEN
+		GOTO QUIT
+	ENDIF
+
+	'' Register custom fonts
+	RegisterCustomFonts
+
+	'' Modify Program Manager
+	ModifyProgramManager(szTitleDir$)
+	
+	'' Success dialog
+	ShowSuccess
+	
+	'' Now start the title
+
+	RUN MakePath(szTitleDir$, ProductFileName$ + ".EXE"), NOWAIT
+	RUN "WINHELP.EXE " + MakePath(szTitleDir$, ProductFileName$ + ".HLP"), NOWAIT
+QUIT:
+	
+	END
+	
+
+'*************************************************************************
+'** Purpose:
+'**     Prompts the user for a path for the title files
+'** Arguments:
+'**     szDefault$ - default path
+'** Returns:
+'**     New valid path name, or "" if the user quit.
+'*************************************************************************
+
+FUNCTION GetTitleDir (szDefault$) STATIC AS STRING
+
+	SetSymbolValue "String", TitleShortName$
+	SetSymbolValue "EditTextIn", szDefault$
+	SetSymbolValue "EditFocus", "ALL"
+
+	GETPATH:
+
+	sz$ = UIStartDlg(CUIDLL$, DESTPATH, "FEditDlgProc", APPHELP, "FHelpDlgProc")
+
+	IF sz$ = "CONTINUE" THEN
+		szTitleDir$ = GetSymbolValue("EditTextOut")
+		IF IsDirWritable(szTitleDir$) = 0 THEN
+
+			BADPATH:
+
+			sz$ = UIStartDlg(CUIDLL$, BADPATH, "FInfoDlgProc", 0, "")
+			IF sz$ = "REACTIVATE" THEN
+				GOTO BADPATH
+			END IF
+			UIPop 1
+			GOTO GETPATH
+		END IF
+		UIPop 1
+		CreateDir szTitleDir$, cmoNone
+
+	ELSEIF sz$ = "REACTIVATE" THEN
+		GOTO GETPATH
+
+	ELSE
+		szTitleDir$ = ""
+
+	END IF
+
+	GetTitleDir = szTitleDir$
+
+END FUNCTION
+
+
+'*************************************************************************
+'** Purpose:
+'**     Copies the files in the INF file
+'** Arguments:
+'**     szTitleDir$ - destination directory for the title files
+'** Returns
+'**     1 if files were copied, 0 otherwise
+'*************************************************************************
+
+FUNCTION CopyFiles(szTitleDir$) STATIC AS INTEGER
+
+	'' Add all system files to the copy list
+	AddSectionFilesToCopyList "System Files", GetSymbolValue("STF_SRCDIR"), GetWindowsSysDir()
+	
+	'' Add all of the title files to the copy list
+	AddSectionFilesToCopyList "Installed Title Files", GetSymbolValue("STF_SRCDIR"), szTitleDir$
+	
+	'' Check size
+	szExtras$ = "Extra"
+	szCosts$ = "Costs"
+	szNeededs$ = "Neededs"
+	FOR i% = 1 TO 26 STEP 1
+		AddListItem szExtras$, "0"
+	NEXT i%
+	
+	'' We assume that VIEWER.INI will take another 4K
+	ReplaceListItem szExtras$, ASC(MID$(GetWindowsDir(), 1, 1)) - ASC("A") + 1, STR$(4096)
+	
+	'' Get amount of space required
+	StillNeed& = GetCopyListCost(szExtras$, szCosts$, szNeededs$)
+	
+	'' Put up a message if there is not enough space
+	FOR i% = 1 TO 26 STEP 1
+		IF VAL(GetListItem(szNeededs$, i%)) > 0 THEN
+	
+			SetSymbolValue "String1", LTRIM$(STR$(VAL(GetListItem(szCosts$, i%)) / 1024))
+			SetSymbolValue "String2", CHR$(i% - 1 + ASC("A"))
+	
+			TOOBIG:
+	
+			sz$ = UIStartDlg(CUIDLL$, TOOBIG, "FInfoDlgProc", 0, "")
+			IF sz$ = "REACTIVATE" THEN
+				GOTO TOOBIG
+			END IF
+			UIPop 1
+			CopyFiles = 0
+			GOTO DONTCOPY
+		END IF
+	NEXT i%
+	
+	'' Copy the files
+	CopyFilesInCopyList
+	
+	CopyFiles = 1
+
+DONTCOPY:
+
+END FUNCTION
+
+
+'*************************************************************************
+'** Purpose:
+'**     Puts up a success dialog
+'*************************************************************************
+
+SUB ShowSuccess STATIC
+
+	SUCCESS:
+	
+	SetSymbolValue "String1", TitleShortName$
+	sz$ = UIStartDlg(CUIDLL$, SUCCESS, "FInfoDlgProc", 0, "")
+	IF sz$ = "REACTIVATE" THEN
+		GOTO SUCCESS
+	END IF
+	UIPop 1
+	
+END SUB
+
+
+'*************************************************************************
+'** Purpose:
+'**     Appends a file name to the end of a directory path,
+'**     inserting a backslash character as needed.
+'** Arguments:
+'**     szDir$  - full directory path (with optional ending "\")
+'**     szFile$ - filename to append to directory
+'** Returns:
+'**     Resulting fully qualified path name.
+'*************************************************************************
+
+FUNCTION MakePath (szDir$, szFile$) STATIC AS STRING
+    IF szDir$ = "" THEN
+		MakePath = szFile$
+    ELSEIF szFile$ = "" THEN
+		MakePath = szDir$
+    ELSEIF MID$(szDir$, LEN(szDir$), 1) = "\" THEN
+		MakePath = szDir$ + szFile$
+    ELSE
+		MakePath = szDir$ + "\" + szFile$
+    END IF
+END FUNCTION
+
+
+'*************************************************************************
+'** Purpose:
+'**     Registers a font.
+'** Arguments:
+'**     fontfile$ - font filename
+'**     fontname$ - font name.
+'*************************************************************************
+
+SUB RegisterFont(fontfile$, fontname$) STATIC
+
+	'' A simple error catching wrapper around AddFont, which is a 'C' routine in MSCUISTF.DLL
+
+    IF AddFont(fontfile$, fontname$) = -1 THEN
+		j% = DoMsgBox("Could not install " + fontfile$ + " font.", "VietVu Font Installation", 0)
+    ENDIF
+
+END SUB
+
+
+'*************************************************************************
+'** Purpose:
+'**     Registers title in VIETVU.INI
+'*************************************************************************
+
+SUB ModifyVietVuIni STATIC
+
+	szIni$ = MakePath(GetWindowsDir(), "VIETVU.INI")
+
+	CreateIniKeyValue szIni$, ProductFileName$, "Name", TitleLongName$, cmoOverwrite
+
+END SUB
+
+
+'*************************************************************************
+'** Purpose:
+'**     Creates program manager entries for the title
+'*************************************************************************
+
+SUB ModifyProgramManager(szTitleDir$) STATIC
+
+	'' Create the program manager group
+
+	CreateProgmanGroup ProgmanGroup$, "", cmoNone
+	ShowProgmanGroup ProgmanGroup$, 1, cmoNone
+	
+	CreateProgmanItem ProgmanGroup$, "VietVu 3.0", MakePath(szTitleDir$, ProductFileName$ + ".EXE"), "", cmoOverwrite
+	CreateProgmanItem ProgmanGroup$, "VietVu Help", "WINHELP.EXE " + MakePath(szTitleDir$, ProductFileName$ + ".HLP"), "", cmoOverwrite
+
+END SUB
+
+
+'*************************************************************************
+'** Purpose:
+'**     Registers custom fonts with Windows.
+'*************************************************************************
+
+SUB RegisterCustomFonts STATIC
+
+	RegisterFont "vietvu.ttf", "VietVu (TrueType)"
+
+END SUB
+
+
+'*************************************************************************
+'** Purpose:
+'**     Registers Windows drivers
+'*************************************************************************
+
+SUB RegisterDrivers STATIC
+
+
+END SUB
+
+
+

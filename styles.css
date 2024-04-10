@@ -1,0 +1,96 @@
+body{
+    background-image: url(./images/peakpx.jpg);
+    background-size: cover; /* This ensures that the background image covers the entire viewport */
+    background-position: center; /* Center the background image */
+    background-repeat: no-repeat; /* Prevent the background image from repeating */
+    background-attachment: fixed;
+    height: 100vh;
+    margin: 0;
+    font-family: 'Julius Sans One', sans-serif;
+    font-size: 3rem;
+    color: white;
+    text-align: center;
+    font-weight: lighter;
+}
+
+h1{
+    padding-top: 40vh;
+    margin:0;
+}
+
+#tiles{
+    padding: 30px 0 30px 0;
+    margin: 40px 200px 40px 200px;
+    border-radius: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 3fr 3fr;
+    background-color: rgba(0, 0, 0, 0.5);
+    /*background: linear-gradient(90deg, black, #4bad56); Replace with your own color stops */
+    /*opacity: 70%;*/
+    z-index: -1;
+}
+
+#tiles>div{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 40px;
+}
+
+h3{
+    font-size: 2rem;
+    margin-bottom: 0;
+}
+
+p{
+    font-size: 1.5rem;
+    margin-bottom: 0;
+}
+
+#navbar{
+    position: fixed;
+    display: flex;
+    width: 100%;
+    height: 10%;
+    opacity: 70%;
+    background-color: black;
+    font-size: 2rem;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+}
+
+a{
+    padding: 50px;
+    color: greenyellow;
+    text-decoration: none;
+}
+
+.logo{
+    width: fit-content;
+    font-size: xx-large;
+    color: white;
+
+}
+
+footer{
+    font-size: small;
+    color: green;
+    padding-top: 40px;
+    padding-bottom: 40px;
+}
+
+.hov:hover{
+    transform: scale(1.1);
+}
+
+.hov{
+    transition: transform 0.3s ease;
+}
+
+#tiles>h2{
+    grid-column: 1/3;
+    grid-row: 1/2;
+}

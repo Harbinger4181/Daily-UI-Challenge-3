@@ -1,0 +1,33 @@
+[Source Media Descriptions]
+     "1", "Copying VietVu Files...", "", "."
+
+[Default File Settings]
+"STF_BACKUP" = ""
+"STF_COPY" = "YES"
+"STF_DECOMPRESS" = "YES"
+"STF_OVERWRITE" = "OLDER"
+"STF_READONLY" = ""
+"STF_ROOT" = ""
+"STF_SETTIME" = "YES"
+"STF_TIME" = ""
+"STF_VITAL" = ""
+
+[System Files1]
+;     number of file
+;        file name
+;                       last change
+;                                   ???
+;                                                size in byte
+;                                                         version number
+;     1, commdlg.dll,,,,1993-03-22,,1033,,,,,,,, 89248,,,,3.10.0.103,
+
+[System Files]
+    1, vietvu.ttf,,,,1995-01-27,,,,,,,,,, 58664,,,,1.0.0.0,
+
+[Installed Title Files]
+    1, vvmsghk.dll,,,,1995-01-19,,,,,,,,,, 11936,,,,1.0.0.0,
+    1, vvpkey.dll,,,,1995-01-19,,,,,,,,,,  5568,,,,1.0.0.0,
+    1, vvdlleng.dll,,,,1995-01-01,,,,,,,,,, 32368,,,,1.0.1.0,
+    1, vvdllvn.dll,,,,1995-01-27,,,,,,,,,, 33872,,,,1.0.1.0,
+    1, vietvu.hlp,,,,1995-01-08,,,,,,,,,, 99775,,,,3.0.0.0,
+    1, vietvu.exe,,,,1995-01-19,,,,,,,,,, 97280,,,,3.0.0.0,
